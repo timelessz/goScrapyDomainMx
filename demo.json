@@ -1,0 +1,60 @@
+{
+  "name": "公司名",
+  "en_name": "公司英文名",
+  "description": "公司介绍：各类信息、罗列",
+  "artificial_person": "法人",
+  "business_scope": "经营范围",
+  "insured_number": "参保人数",
+  "registered_capital": "注册资本",
+  "found_time": "创建时间",
+  "social_credi_code": "统一社会信用码",
+  "contact": [
+    {
+      "name": "赵兴壮",
+      "dept": "职务",
+      "phone": [
+        "电话、手机号码",
+        "13698612743",
+        "0538-8898056"
+      ],
+      "email": [
+        "834916321@qq.com"
+      ]
+    }
+  ],
+  "fax": "传真",
+  "location": {
+    "address": "公司地址",
+    "province": "省份",
+    "city": "城市",
+    "district": "区县",
+    "post": "邮政编码"
+  },
+  "industry": {
+    "industry_id": "行业ID",
+    "industry_name": "行业name"
+  },
+  "website": [
+    "所有可访问的链接",
+    "https://seedcleaner.en.made-in-china.com"
+  ],
+  "domain": [
+    {
+      "domain": "",
+      "title": "",
+      "mail_title": "",
+      "mx_brand_id": "",
+      "mx_brand_name": "",
+      "mxrecord": "",
+      "selfbuild_brand_id": "",
+      "selfbuild_brand_name": "",
+      "contacttool_brand_id": "",
+      "contacttool_brand_name": ""
+    }
+  ],
+  "is_importexport": "是否是进出口企业",
+  "is_sync": "是否同步到CRM中",
+  "crm_id": "",
+  "created_at": "",
+  "updated_at": ""
+}
