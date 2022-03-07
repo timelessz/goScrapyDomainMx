@@ -16,7 +16,7 @@ type ScrapyInfo struct {
 // 读取 文件到数据库中
 func readFile(fileName string) ScrapyInfo {
 	absPath, _ := filepath.Abs(fileName)
-	file, err := os.Open(absPath)
+	file, err := os.OpenFile(absPath, os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		panic(err)
 	}
@@ -34,8 +34,6 @@ func readFile(fileName string) ScrapyInfo {
 
 // 写文件 到数据库中
 func writeFile(fileName string, sinfo ScrapyInfo) bool {
-	//s, _ := json.Marshal(sinfo)
-	//fmt.Println(string(s))
 	fileContent, _ := json.Marshal(sinfo)
 	absPath, _ := filepath.Abs(fileName)
 	err := ioutil.WriteFile(absPath, fileContent, 0644)
