@@ -88,6 +88,7 @@ func (pool *MysqlConnectPool) GetMadeInChinaLimitCustomer(limit int, offset int)
 	return customers
 }
 
+//mx 后缀对应品牌数据
 type MxSuffix struct {
 	BId    string `json:"b_id"`
 	Suffix string `json:"suffix"`
@@ -96,7 +97,7 @@ type MxSuffix struct {
 
 // map
 // 获取limit 客户数据
-func (pool *MysqlConnectPool) GetCrmSuffixData() map[string]MxSuffix {
+/*func (pool *MysqlConnectPool) GetCrmSuffixData() map[string]MxSuffix {
 	suffixMap := make(map[string]MxSuffix)
 	rows, err := pool.Db.Table("sm_mx_suffix as s").Select("s.mxsuffix as suffix,s.brand_id as b_id, b.name as name").Joins("left join sm_mx_brand as b on b.id=s.brand_id").Rows()
 	if err != nil {
@@ -114,4 +115,4 @@ func (pool *MysqlConnectPool) GetCrmSuffixData() map[string]MxSuffix {
 		suffixMap[suffix] = s
 	}
 	return suffixMap
-}
+}*/

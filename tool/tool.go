@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/forease/gotld"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os/exec"
 	"regexp"
@@ -113,4 +114,18 @@ func GetAllFile(pathname string, s []string) ([]string, error) {
 		}
 	}
 	return s, nil
+}
+
+// 发送 get 请求
+func SendRequest(msg string) {
+	Url, err := url.Parse("https://salesman.cc/index.php/Shuaidan_ceshi/PublicTry/push/string/" + url.QueryEscape(msg))
+	if err != nil {
+		panic(err.Error())
+	}
+	//如果参数中有中文参数,这个方法会进行URLEncode
+	urlPath := Url.String()
+	resp, err := http.Get(urlPath)
+	defer resp.Body.Close()
+	s, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(s))
 }

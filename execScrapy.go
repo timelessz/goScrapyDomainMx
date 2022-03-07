@@ -1,34 +1,17 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	gomongo "scrapyDomain/mongodb"
 	"scrapyDomain/mysql"
-	"scrapyDomain/orm"
 	"scrapyDomain/scrapy"
 	"scrapyDomain/steplock"
 	"scrapyDomain/tool"
 	"sync"
 )
-
-// 获取limit offset 指定数量客户
-func getLimitCustomer(limit int, offset int, db *gorm.DB) []orm.Customer {
-	var Customers []orm.Customer
-	if err := db.Where("URL != ? AND mxrecord = ?", "", "").Order("id desc").Offset(offset).Limit(limit).Find(&Customers).Error; err != nil {
-		// 数据报错
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 返回空数组
-			return Customers
-		}
-		fmt.Println("获取数据异常")
-	}
-	return Customers
-}
 
 func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
 	fileName := "scrapylock.txt"
@@ -72,7 +55,14 @@ func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.M
 		mongoId := v["_id"]
 		mongoIds := mongoId.(primitive.ObjectID).Hex()
 		domains := v["domain"]
-		name, _ := v["name"].(string)
+		name := ""
+		cn_name, _ := v["name"].(string)
+		en_name, _ := v["en_name"].(string)
+		if cn_name != "" {
+			name = cn_name
+		} else {
+			name = en_name
+		}
 		if domainArr, ok := domains.(primitive.A); ok {
 			dA := []interface{}(domainArr)
 			for _, d := range dA {
@@ -82,6 +72,7 @@ func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.M
 				}
 				s := fmt.Sprint(dm["domain"])
 				brand_id := fmt.Sprint(dm["brand_id"])
+				mx_record := fmt.Sprint(dm["mx_record"])
 				// 获取mx记录
 				fmt.Println(s)
 				mxrecord := tool.ExecDigCommand(s)
@@ -111,7 +102,7 @@ func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.M
 				if err != nil {
 					fmt.Println(err.Error())
 				}
-				SaveCustomerMxInfo(mss, s, brand_id, mongoIds, mxrecord)
+				SaveCustomerMxInfo(mss, s, brand_id, mx_record, mongoIds, mxrecord, name)
 			}
 		}
 	}
@@ -121,19 +112,32 @@ func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.M
 /**
 保存 客户mx 信息
 */
-func SaveCustomerMxInfo(mss mysql.MxSuffix, domain string, pre_brand_id string, mongodbId string, mxrecord string) {
+func SaveCustomerMxInfo(mss mysql.MxSuffix, domain string, pre_brand_id string, pre_mx_record string, mongodbId string, mxrecord string, companyName string) {
 	oid, _ := primitive.ObjectIDFromHex(mongodbId)
 	filter := bson.D{{"_id", oid}, {"domain.domain", domain}}
-	update := bson.M{"domain.$.mxrecord": mxrecord}
+	update := bson.M{}
+	if pre_mx_record != mxrecord {
+		update["domain.$.mxrecord"] = mxrecord
+		logsr := companyName + " " + domain + "的mx 记录从" + pre_mx_record + "变更为：" + mxrecord
+		//tool.SendRequest(logsr)
+		Logs{file: "changerecord.txt"}.addLog(logsr)
+	}
 	if mss != (mysql.MxSuffix{}) && pre_brand_id != mss.BId {
 		update["domain.$.mx_brand_id"] = mss.BId
 		update["domain.$.mx_brand_name"] = mss.Name
+		// 品牌变化
+		loginfo := companyName + " " + domain + "的邮箱品牌变更为" + mss.Name + " mx 记录变更为：" + mxrecord
+		//tool.SendRequest(loginfo)
+		Logs{file: "changerecord.txt"}.addLog(loginfo)
 	} else {
 		fmt.Println("MX品牌未变化")
-
 	}
-	result := gomongo.Instance.UpdateOne("customer", filter, bson.M{"$set": update})
-	fmt.Println(result)
+	if update != nil {
+		result := gomongo.Instance.UpdateOne("customer", filter, bson.M{"$set": update})
+		fmt.Println(result)
+	} else {
+		//无需更新
+	}
 }
 
 /**
@@ -162,6 +166,7 @@ func SaveMxSuffixData(mss mysql.MxSuffix) {
 	}
 }
 
+// 初始化数据库链接信息
 func initDb() {
 	bDatabaseConfigMap := map[string]string{
 		"MysqlHost":   "rdsfjnifbfjnifbo.mysql.rds.aliyuncs.com",
@@ -181,12 +186,12 @@ func StartScrapy() {
 	wg.Add(consumerCount)
 	var ch = make(chan bson.M, consumerCount)
 	go produce(ch, &wg)
-	suffixMap := mysql.Instance.GetCrmSuffixData()
+	suffixMap := gomongo.GetCrmSuffixData()
 	for i := 0; i < consumerCount; i++ {
 		go consumer(ch, &wg, suffixMap, i)
 	}
 	//网站 www 爬取
-	scrapyConsumerCount := 20
+	scrapyConsumerCount := 5
 	wg.Add(scrapyConsumerCount)
 	var scrapych = make(chan bson.M, scrapyConsumerCount)
 	go scrapy.ScrapyProduce(scrapych, &wg)
