@@ -51,12 +51,15 @@ var MailSelfBuildMap = map[string]map[int]string{
 
 // 获取 使用 selenium 的数据
 func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
-	fileName := "scrapyweblock.txt"
+	fileName := "scrapylock.txt"
 	step := steplock.Step{
-		fileName,
+		File: fileName,
 	}
 	for true {
 		offset, limit := step.GetScrapyFlag()
+		if limit == 0 {
+			limit = 50
+		}
 		options := options.Find()
 		//options.SetSort(bson.M{"": 1})
 		options.SetSkip(int64(offset))
@@ -65,14 +68,15 @@ func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
 			"domain": bson.M{"$ne": bson.A{}},
 		}
 		Customers := gomongo.Instance.FindMany("customer", filter, options)
-		for _, Customer := range Customers {
-			ch <- Customer
-		}
+		fmt.Println(len(Customers))
 		if len(Customers) == 0 {
 			// 表示未获取到数据
 			fmt.Println("mx 数据爬取生产者，未获取到数据")
-			step.SetScrapyFlag(0, 1000)
+			step.SetScrapyFlag(0, limit)
 			continue
+		}
+		for _, Customer := range Customers {
+			ch <- Customer
 		}
 		// 设置已经爬取到的数据
 		step.SetScrapyFlag(offset+limit, limit)

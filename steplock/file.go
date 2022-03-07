@@ -16,9 +16,9 @@ type ScrapyInfo struct {
 // 读取 文件到数据库中
 func readFile(fileName string) ScrapyInfo {
 	absPath, _ := filepath.Abs(fileName)
-	file, err := os.OpenFile(absPath, os.O_WRONLY|os.O_CREATE, 0755)
+	file, err := os.Open(absPath)
 	if err != nil {
-		panic(err)
+		//panic(err)
 	}
 	defer file.Close()
 	var sinfo ScrapyInfo

@@ -14,12 +14,15 @@ import (
 )
 
 func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
-	fileName := "scrapylock.txt"
+	fileName := "scrapy.txt"
 	step := steplock.Step{
-		fileName,
+		File: fileName,
 	}
 	for true {
 		offset, limit := step.GetScrapyFlag()
+		if limit == 0 {
+			limit = 50
+		}
 		options := options.Find()
 		options.SetSort(bson.M{"created_at": -1})
 		options.SetSkip(int64(offset))
@@ -28,14 +31,10 @@ func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
 			"domain": bson.M{"$ne": bson.A{}},
 		}
 		Customers := gomongo.Instance.FindMany("customer", filter, options)
-		for _, Customer := range Customers {
-			//v, _ := Customer["name"].(string)
-			ch <- Customer
-		}
 		if len(Customers) == 0 {
 			// 表示未获取到数据
 			fmt.Println("mx 数据爬取生产者，未获取到数据")
-			step.SetScrapyFlag(0, 1000)
+			step.SetScrapyFlag(0, limit)
 			continue
 		}
 		for _, Customer := range Customers {
@@ -191,7 +190,7 @@ func StartScrapy() {
 		go consumer(ch, &wg, suffixMap, i)
 	}
 	//网站 www 爬取
-	scrapyConsumerCount := 5
+	scrapyConsumerCount := 10
 	wg.Add(scrapyConsumerCount)
 	var scrapych = make(chan bson.M, scrapyConsumerCount)
 	go scrapy.ScrapyProduce(scrapych, &wg)
