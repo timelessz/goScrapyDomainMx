@@ -27,6 +27,7 @@ func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
 		options.SetSort(bson.M{"created_at": -1})
 		options.SetSkip(int64(offset))
 		options.SetLimit(int64(limit))
+		options.SetAllowDiskUse(true)
 		filter := bson.M{
 			"domain": bson.M{"$ne": bson.A{}},
 		}
@@ -174,7 +175,8 @@ func initDb() {
 		"MysqlPasswd": "qiangbi123",
 	}
 	mysql.InitInstance(bDatabaseConfigMap)
-	const uri = "mongodb://admin:qiangbi123@144.123.173.6:27017"
+	//const uri = "mongodb://admin:qiangbi123@144.123.173.6:27017"
+	const uri = "mongodb://admin:qiangbi123@127.0.0.1:27017"
 	gomongo.MustConnect(uri, "bigbusiness")
 }
 
@@ -190,7 +192,7 @@ func StartScrapy() {
 		go consumer(ch, &wg, suffixMap, i)
 	}
 	//网站 www 爬取
-	scrapyConsumerCount := 10
+	scrapyConsumerCount := 20
 	wg.Add(scrapyConsumerCount)
 	var scrapych = make(chan bson.M, scrapyConsumerCount)
 	go scrapy.ScrapyProduce(scrapych, &wg)

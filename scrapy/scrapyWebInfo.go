@@ -64,6 +64,7 @@ func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
 		//options.SetSort(bson.M{"": 1})
 		options.SetSkip(int64(offset))
 		options.SetLimit(int64(limit))
+		options.SetAllowDiskUse(true)
 		filter := bson.M{
 			"domain": bson.M{"$ne": bson.A{}},
 		}
