@@ -61,19 +61,19 @@ func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
 			limit = 50
 		}
 		options := options.Find()
-		//options.SetSort(bson.M{"": 1})
+		options.SetSort(bson.M{"_id": 1})
 		options.SetSkip(int64(offset))
 		options.SetLimit(int64(limit))
 		options.SetAllowDiskUse(true)
 		filter := bson.M{
-			"domain": bson.M{"$ne": bson.A{}},
+			//"domain": bson.M{"$ne": bson.A{}},
 		}
 		Customers := gomongo.Instance.FindMany("customer", filter, options)
 		fmt.Println(len(Customers))
 		if len(Customers) == 0 {
 			// 表示未获取到数据
 			fmt.Println("mx 数据爬取生产者，未获取到数据")
-			step.SetScrapyFlag(0, limit)
+			//step.SetScrapyFlag(0, limit)
 			continue
 		}
 		for _, Customer := range Customers {

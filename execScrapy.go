@@ -21,21 +21,21 @@ func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
 	for true {
 		offset, limit := step.GetScrapyFlag()
 		if limit == 0 {
-			limit = 50
+			limit = 200
 		}
 		options := options.Find()
-		options.SetSort(bson.M{"created_at": -1})
+		options.SetSort(bson.M{"_id": 1})
 		options.SetSkip(int64(offset))
 		options.SetLimit(int64(limit))
 		options.SetAllowDiskUse(true)
 		filter := bson.M{
-			"domain": bson.M{"$ne": bson.A{}},
+			//"domain": bson.M{"$ne": bson.A{}},
 		}
 		Customers := gomongo.Instance.FindMany("customer", filter, options)
 		if len(Customers) == 0 {
 			// 表示未获取到数据
 			fmt.Println("mx 数据爬取生产者，未获取到数据")
-			step.SetScrapyFlag(0, limit)
+			//step.SetScrapyFlag(0, limit)
 			continue
 		}
 		for _, Customer := range Customers {
@@ -183,7 +183,7 @@ func initDb() {
 func StartScrapy() {
 	initDb()
 	var wg sync.WaitGroup
-	consumerCount := 200
+	consumerCount := 100
 	wg.Add(consumerCount)
 	var ch = make(chan bson.M, consumerCount)
 	go produce(ch, &wg)
@@ -192,13 +192,13 @@ func StartScrapy() {
 		go consumer(ch, &wg, suffixMap, i)
 	}
 	//网站 www 爬取
-	scrapyConsumerCount := 20
+	scrapyConsumerCount := 10
 	wg.Add(scrapyConsumerCount)
 	var scrapych = make(chan bson.M, scrapyConsumerCount)
 	go scrapy.ScrapyProduce(scrapych, &wg)
 	for i := 0; i < scrapyConsumerCount; i++ {
 		go scrapy.ScrapyConsumer(scrapych, &wg, i)
 	}
-	// 等待程序都结束才停止执行
+	//等待程序都结束才停止执行
 	wg.Wait()
 }

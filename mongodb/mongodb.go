@@ -123,7 +123,7 @@ func (db *mongodb) FindMany(collectionName string, filter interface{}, opts ...*
 		return resultArr
 	}
 	table := db.database.Collection(collectionName)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Second)
 	defer cancel()
 	cur, err := table.Find(ctx, filter, opts...)
 	if err != nil {
