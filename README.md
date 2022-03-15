@@ -6,8 +6,7 @@
 ## 使用方式：
 
 ### 部署方式：
-####1、安装chromedriver：
-
+#### 1、安装chromedriver：
 - chromedriver 存放目录 C:\Program Files\chromedriver_win32\chromedriver.exe 下载版本 需与 本机 chrome 版本一致；
 - 下载链接：[chromedriver 下载地址](https://chromedriver.chromium.org/downloads)
 
