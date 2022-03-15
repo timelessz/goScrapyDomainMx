@@ -10,7 +10,9 @@ import (
 	"scrapyDomain/scrapy"
 	"scrapyDomain/steplock"
 	"scrapyDomain/tool"
+	"strconv"
 	"sync"
+	"time"
 )
 
 func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
@@ -51,6 +53,12 @@ func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
 // 消费者
 func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.MxSuffix, i int) {
 	for true {
+		// 工作日不处理数据
+		if tool.CheckIsWorking() {
+			tool.Logs{File: "sleep.txt"}.AddLog(strconv.Itoa(i) + "号MX爬取进程，工作时间暂停执行")
+			time.Sleep(1 * time.Minute)
+			continue
+		}
 		v := <-ch
 		mongoId := v["_id"]
 		mongoIds := mongoId.(primitive.ObjectID).Hex()
@@ -120,7 +128,7 @@ func SaveCustomerMxInfo(mss mysql.MxSuffix, domain string, pre_brand_id string, 
 		update["domain.$.mxrecord"] = mxrecord
 		logsr := companyName + " " + domain + "的mx 记录从" + pre_mx_record + "变更为：" + mxrecord
 		//tool.SendRequest(logsr)
-		Logs{file: "changerecord.txt"}.addLog(logsr)
+		tool.Logs{File: "changerecord.txt"}.AddLog(logsr)
 	}
 	if mss != (mysql.MxSuffix{}) && pre_brand_id != mss.BId {
 		update["domain.$.mx_brand_id"] = mss.BId
@@ -128,7 +136,7 @@ func SaveCustomerMxInfo(mss mysql.MxSuffix, domain string, pre_brand_id string, 
 		// 品牌变化
 		loginfo := companyName + " " + domain + "的邮箱品牌变更为" + mss.Name + " mx 记录变更为：" + mxrecord
 		//tool.SendRequest(loginfo)
-		Logs{file: "changerecord.txt"}.addLog(loginfo)
+		tool.Logs{File: "changerecord.txt"}.AddLog(loginfo)
 	} else {
 		fmt.Println("MX品牌未变化")
 	}
@@ -176,7 +184,7 @@ func initDb() {
 	}
 	mysql.InitInstance(bDatabaseConfigMap)
 	//const uri = "mongodb://admin:qiangbi123@144.123.173.6:27017"
-	const uri = "mongodb://admin:qiangbi123@127.0.0.1:27017"
+	const uri = "mongodb://admin:qiangbi123@192.168.2.155:27017"
 	gomongo.MustConnect(uri, "bigbusiness")
 }
 

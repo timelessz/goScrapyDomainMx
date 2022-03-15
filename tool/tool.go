@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"time"
 )
 
 // 截取出域名
@@ -128,4 +129,38 @@ func SendRequest(msg string) {
 	defer resp.Body.Close()
 	s, err := ioutil.ReadAll(resp.Body)
 	fmt.Println(string(s))
+}
+
+// 日期转换为 周几
+func ZellerFunction2Week(year, month, day uint16) (string, int) {
+	var y, m, c uint16
+	if month >= 3 {
+		m = month
+		y = year % 100
+		c = year / 100
+	} else {
+		m = month + 12
+		y = (year - 1) % 100
+		c = (year - 1) / 100
+	}
+	week := y + (y / 4) + (c / 4) - 2*c + ((26 * (m + 1)) / 10) + day - 1
+	if week < 0 {
+		week = 7 - (-week)%7
+	} else {
+		week = week % 7
+	}
+	which_week := int(week)
+	var weekday = [7]string{"周日", "周一", "周二", "周三", "周四", "周五", "周六"}
+	return weekday[which_week], which_week
+}
+
+// 验证是否是工作日
+func CheckIsWorking() bool {
+	now := time.Now()
+	hour := now.Hour()
+	Weekday := int(now.Weekday())
+	if (Weekday == 0 || Weekday == 6) || !(hour > 9 && hour < 18) {
+		return false
+	}
+	return true
 }

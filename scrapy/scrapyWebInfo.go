@@ -8,9 +8,11 @@ import (
 	gomongo "scrapyDomain/mongodb"
 	"scrapyDomain/selenium"
 	"scrapyDomain/steplock"
+	"scrapyDomain/tool"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // 聊天方式
@@ -86,11 +88,15 @@ func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
 }
 
 func ScrapyConsumer(ch <-chan bson.M, wg *sync.WaitGroup, i int) {
-	//db := getDB()
 	service, wd := selenium.GetWebDriver()
 	defer service.Stop()
 	defer wd.Quit()
 	for true {
+		if tool.CheckIsWorking() {
+			tool.Logs{File: "sleep.txt"}.AddLog(strconv.Itoa(i) + "号网站爬取进程，工作时间暂停执行")
+			time.Sleep(1 * time.Minute)
+			continue
+		}
 		v := <-ch
 		mongoId := v["_id"]
 		mongoIds := mongoId.(primitive.ObjectID).Hex()
@@ -110,10 +116,16 @@ func ScrapyConsumer(ch <-chan bson.M, wg *sync.WaitGroup, i int) {
 				fmt.Println(mailTitle, selfBuildBrandId, selfbuildBrandName)
 				// 爬取www 网站标题  加获取 咨询工具 记录
 				domainTitle, domainSource := selenium.Scrapy(wd, "http://"+s)
-				contactBrandId, contactBrandName := matchSelfBuild(&domainSource, "contacttool")
-				fmt.Println(domainTitle, contactBrandId, contactBrandName)
-				saveCustomerInfo(dm, mongoIds, s, mailTitle, selfBuildBrandId, selfbuildBrandName, domainTitle, contactBrandId, contactBrandName)
-				///////////////////////////////////////////
+				if domainTitle != "" {
+					contactBrandId, contactBrandName := matchSelfBuild(&domainSource, "contacttool")
+					fmt.Println(domainTitle, contactBrandId, contactBrandName)
+					saveCustomerInfo(dm, mongoIds, s, mailTitle, selfBuildBrandId, selfbuildBrandName, domainTitle, contactBrandId, contactBrandName)
+				} else {
+					domainTitle, domainSource = selenium.Scrapy(wd, "http://www."+s)
+					contactBrandId, contactBrandName := matchSelfBuild(&domainSource, "contacttool")
+					fmt.Println(domainTitle, contactBrandId, contactBrandName)
+					saveCustomerInfo(dm, mongoIds, s, mailTitle, selfBuildBrandId, selfbuildBrandName, domainTitle, contactBrandId, contactBrandName)
+				}
 			}
 		}
 	}

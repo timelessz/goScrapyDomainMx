@@ -1,4 +1,4 @@
-package main
+package tool
 
 import (
 	"bytes"
@@ -9,13 +9,13 @@ import (
 )
 
 type Logs struct {
-	file string
+	File string
 }
 
-func (logObj Logs) addLog(msg string) {
+func (logObj Logs) AddLog(msg string) {
 	writer1 := &bytes.Buffer{}
 	writer2 := os.Stdout
-	writer3, err := os.OpenFile(logObj.file, os.O_WRONLY|os.O_CREATE, 0755)
+	writer3, err := os.OpenFile(logObj.File, os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		log.Fatalf("create file log.txt failed: %v", err)
 	}
