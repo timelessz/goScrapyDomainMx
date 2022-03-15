@@ -23,7 +23,7 @@ func produce(ch chan<- bson.M, wg *sync.WaitGroup) {
 	for true {
 		offset, limit := step.GetScrapyFlag()
 		if limit == 0 {
-			limit = 200
+			limit = 500
 		}
 		options := options.Find()
 		options.SetSort(bson.M{"_id": 1})
@@ -86,7 +86,7 @@ func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.M
 				mxrecord := tool.ExecDigCommand(s)
 				if mxrecord == "" {
 					// website 获取数据为空
-					fmt.Println(name + s + "获取MXRECORD为空")
+					//fmt.Println(name + s + "获取MXRECORD为空")
 					continue
 				}
 				suffix := AnalyseMxRecord(mxrecord)
@@ -106,7 +106,7 @@ func consumer(ch <-chan bson.M, wg *sync.WaitGroup, suffixMap map[string]mysql.M
 				} else {
 					SaveMxSuffixData(mss)
 				}
-				fmt.Println(name + s + "获取MXRECORD为" + mxrecord)
+				//fmt.Println(name + s + "获取MXRECORD为" + mxrecord)
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -138,7 +138,7 @@ func SaveCustomerMxInfo(mss mysql.MxSuffix, domain string, pre_brand_id string, 
 		//tool.SendRequest(loginfo)
 		tool.Logs{File: "changerecord.txt"}.AddLog(loginfo)
 	} else {
-		fmt.Println("MX品牌未变化")
+		//fmt.Println("MX品牌未变化")
 	}
 	if update != nil {
 		result := gomongo.Instance.UpdateOne("customer", filter, bson.M{"$set": update})

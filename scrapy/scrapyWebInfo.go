@@ -53,14 +53,14 @@ var MailSelfBuildMap = map[string]map[int]string{
 
 // 获取 使用 selenium 的数据
 func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
-	fileName := "scrapylock.txt"
+	fileName := "scrapylock1.txt"
 	step := steplock.Step{
 		File: fileName,
 	}
 	for true {
 		offset, limit := step.GetScrapyFlag()
 		if limit == 0 {
-			limit = 50
+			limit = 500
 		}
 		options := options.Find()
 		options.SetSort(bson.M{"_id": 1})
@@ -68,10 +68,12 @@ func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
 		options.SetLimit(int64(limit))
 		options.SetAllowDiskUse(true)
 		filter := bson.M{
-			//"domain": bson.M{"$ne": bson.A{}},
+			//"domain.mx_brand_id": 8,
+			//"$and":               []bson.M{bson.M{"domain.mail_title": bson.M{"$ne": ""}}, bson.M{"domain.mail_title": bson.M{"$ne": nil}}, bson.M{"domain.title": bson.M{"$ne": ""}}, bson.M{"domain.title": bson.M{"$ne": nil}}},
+			//"domain.domain": "zjcme.cn",
 		}
+		// bson.M{"IsRead": bson.M{"$gt": 0}, "$or": []bson.M{bson.M{"Account": this.Account}, bson.M{"DoneeObjId": this.ObjID.Hex()}}}
 		Customers := gomongo.Instance.FindMany("customer", filter, options)
-		fmt.Println(len(Customers))
 		if len(Customers) == 0 {
 			// 表示未获取到数据
 			fmt.Println("mx 数据爬取生产者，未获取到数据")
@@ -79,6 +81,7 @@ func ScrapyProduce(ch chan<- bson.M, wg *sync.WaitGroup) {
 			continue
 		}
 		for _, Customer := range Customers {
+			//fmt.Println(Customer)
 			ch <- Customer
 		}
 		// 设置已经爬取到的数据
@@ -113,17 +116,16 @@ func ScrapyConsumer(ch <-chan bson.M, wg *sync.WaitGroup, i int) {
 				// 爬取mail 网站信息  自建邮箱数据获取
 				mailTitle, mailSource := selenium.Scrapy(wd, "http://mail."+s)
 				selfBuildBrandId, selfbuildBrandName := matchSelfBuild(&mailSource)
-				fmt.Println(mailTitle, selfBuildBrandId, selfbuildBrandName)
 				// 爬取www 网站标题  加获取 咨询工具 记录
 				domainTitle, domainSource := selenium.Scrapy(wd, "http://"+s)
 				if domainTitle != "" {
 					contactBrandId, contactBrandName := matchSelfBuild(&domainSource, "contacttool")
-					fmt.Println(domainTitle, contactBrandId, contactBrandName)
+					//fmt.Println(domainTitle, contactBrandId, contactBrandName)
 					saveCustomerInfo(dm, mongoIds, s, mailTitle, selfBuildBrandId, selfbuildBrandName, domainTitle, contactBrandId, contactBrandName)
 				} else {
 					domainTitle, domainSource = selenium.Scrapy(wd, "http://www."+s)
 					contactBrandId, contactBrandName := matchSelfBuild(&domainSource, "contacttool")
-					fmt.Println(domainTitle, contactBrandId, contactBrandName)
+					//fmt.Println(domainTitle, contactBrandId, contactBrandName)
 					saveCustomerInfo(dm, mongoIds, s, mailTitle, selfBuildBrandId, selfbuildBrandName, domainTitle, contactBrandId, contactBrandName)
 				}
 			}
@@ -147,19 +149,24 @@ func saveCustomerInfo(dm primitive.M, mongodbId string, domain string, mailTitle
 	if mailTitle != "" && mailTitle != mail_title {
 		update["domain.$.mail_title"] = mailTitle
 	}
+	//fmt.Println(selfbuild_brand_id)
+	//fmt.Println(selfBuildBrandId)
+	//fmt.Println(selfbuild_brand_id != "")
+	//fmt.Println(reflect.TypeOf(selfbuild_brand_id))
+	//fmt.Println(selfbuild_brand_id != strconv.Itoa(selfBuildBrandId))
 	// 联系方式
-	if selfbuild_brand_id != "" && selfbuild_brand_id != strconv.Itoa(selfBuildBrandId) {
+	if selfbuild_brand_id != strconv.Itoa(selfBuildBrandId) {
 		update["domain.$.selfbuild_brand_id"] = selfBuildBrandId
 		update["domain.$.selfbuild_brand_name"] = selfbuildBrandName
 	}
 	// 联系方式
-	if contacttool_brand_id != "" && contacttool_brand_id != strconv.Itoa(contactBrandId) {
+	if contacttool_brand_id != strconv.Itoa(contactBrandId) {
 		update["domain.$.contacttool_brand_id"] = contactBrandId
 		update["domain.$.contacttool_brand_name"] = contactBrandName
 	}
 	if update != nil {
-		fmt.Println(domain + "更新数据")
-		fmt.Println(update)
+		//fmt.Println(domain + "更新数据")
+		//fmt.Println(update)
 		result := gomongo.Instance.UpdateOne("customer", filter, bson.M{"$set": update})
 		fmt.Println(result)
 	}

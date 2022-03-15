@@ -18,7 +18,7 @@ func GetWebDriver() (*selenium.Service, selenium.WebDriver) {
 	selenium.SetDebug(false)
 	service, err := selenium.NewChromeDriverService(chromeDriver, driverport, ops...)
 	if err != nil {
-		panic(err) // panic is used only as an example and is not otherwise recommended.
+		//panic(err) // panic is used only as an example and is not otherwise recommended.
 	}
 	caps := selenium.Capabilities{"browserName": "chrome"}
 	//禁止图片加载，加快渲染速度
@@ -39,7 +39,7 @@ func GetWebDriver() (*selenium.Service, selenium.WebDriver) {
 	caps.AddChrome(chromeCaps)
 	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", driverport))
 	if err != nil {
-		panic(err)
+		//panic(err)
 	}
 	return service, wd
 }
